@@ -1,7 +1,7 @@
 import { createServer as createHttpServer } from 'node:http';
 import { createServer as createHttpsServer } from 'node:https';
 import { createReadStream, existsSync, mkdirSync, readFileSync, statSync } from 'node:fs';
-import { dirname, extname, join, normalize, resolve } from 'node:path';
+import { dirname, extname, isAbsolute, join, normalize, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createDatabase } from './database.js';
 import {
@@ -490,7 +490,10 @@ export function createApp(database = createDatabase(), options = {}) {
       if (request.method === 'GET') {
         const requested = path === '/' || path === '/vendedor' ? 'index.html' : normalize(path).replace(/^([\\/]+|\.\.[\\/])+/g, '');
         const file = resolve(publicRoot, requested);
-        if (!file.startsWith(`${publicRoot}\\`) && file !== publicRoot) return sendJson(404, { error: 'No encontrado' });
+        const relativePath = relative(publicRoot, file);
+        if (relativePath === '..' || relativePath.startsWith(`..${sep}`) || isAbsolute(relativePath)) {
+          return sendJson(404, { error: 'No encontrado' });
+        }
         if (!existsSync(file) || !statSync(file).isFile()) return sendJson(404, { error: 'No encontrado' });
         response.writeHead(200, { 'Content-Type': types[extname(file)] || 'application/octet-stream', 'Cache-Control': 'no-cache' });
         return createReadStream(file).pipe(response);
