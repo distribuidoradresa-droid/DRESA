@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#080d17">
+  <meta name="description" content="Control local de productos, inventario, clientes y ventas DRESA.">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" href="/icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/styles.css?v=5">
+  <title>DRESA | Inventario y ventas</title>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="/" aria-label="DRESA, inicio"><span class="brand-mark">D</span><span>DRESA<small>Control operativo</small></span></a>
+    <div class="topbar-right"><span id="connection" class="connection"><i></i> Conectando…</span><button id="sync-now" class="button button-light" type="button">Sincronizar</button><button id="logout-matrix" class="button button-light" type="button">Salir</button></div>
+  </header>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <p class="nav-label">OPERACIÓN</p>
+      <nav id="navigation" aria-label="Navegación principal">
+        <button class="nav-item active" data-view="products">Productos</button>
+        <button class="nav-item" data-view="inventory">Inventario</button>
+        <button class="nav-item" data-view="movements">Movimientos</button>
+        <button class="nav-item" data-view="sales">Ventas y preventas</button>
+        <button class="nav-item" data-view="clients">Clientes</button>
+        <button class="nav-item" data-view="closing">Cierre diario</button>
+        <button class="nav-item" data-view="rotation">Rotación y actividad</button>
+        <button class="nav-item admin-only hidden" data-view="users">Usuarios y dispositivos</button>
+        <button class="nav-item admin-only hidden" data-view="routes">Rutas y bodegas</button>
+      </nav>
+      <div class="side-bottom"><span id="matrix-route-tag" class="route-tag">● &nbsp; Ruta</span><a href="/vendedor" class="seller-link">Abrir vista de vendedor →</a></div>
+    </aside>
+    <main id="main" class="main-content">
+      <section id="view-users" class="view hidden admin-only">
+        <div class="page-heading"><div><p class="eyebrow">CONTROL DE ACCESO</p><h1>Usuarios y dispositivos</h1><p class="subheading">Cuentas, permisos, dispositivos autorizados y sesiones activas.</p></div><button id="refresh-security" class="button button-light" type="button">Actualizar estado</button></div>
+        <section class="card table-card"><div class="card-heading"><h2>Agregar usuario</h2><span class="count-label">Las contraseñas deben tener al menos 12 caracteres</span></div>
+          <form id="user-form" class="compact-form security-user-form">
+            <div class="form-row"><label>Nombre<input name="name" required maxlength="120"></label><label>Usuario<input name="username" required minlength="3" maxlength="40" autocomplete="off"></label></div>
+            <div class="form-row"><label>Contraseña inicial<input name="password" type="password" required minlength="12" maxlength="256" autocomplete="new-password"></label>
+              <label>Rol<select name="role"><option value="VENDEDOR">VENDEDOR</option><option value="PREVENTA">PREVENTA</option><option value="ADMIN">ADMIN / MATRIZ</option></select></label></div>
+            <label id="user-route-field">Ruta asignada<select name="routeId" required><option value="">Selecciona una ruta activa</option></select></label>
+            <div><button class="button button-primary" type="submit">Crear usuario</button></div>
+          </form>
+        </section>
+        <section class="card table-card security-table"><div class="card-heading"><h2>Usuarios</h2><span id="security-user-count" class="count-label"></span></div><div class="table-wrap"><table><thead><tr><th>Nombre</th><th>Usuario</th><th>Rol</th><th>Ruta / bodega</th><th>Estado</th><th>Dispositivos</th><th>Sesiones</th><th>Acciones</th></tr></thead><tbody id="security-users-body"></tbody></table></div></section>
+        <section class="card table-card security-table"><div class="card-heading"><h2>Roles y permisos</h2></div><div class="table-wrap"><table><thead><tr><th>Rol</th><th>Acceso</th></tr></thead><tbody><tr><td>ADMIN / MATRIZ</td><td>Administración completa de usuarios, dispositivos y operación.</td></tr><tr><td>VENDEDOR</td><td>Consulta productos y clientes; registra clientes, autoventas y preventas.</td></tr><tr><td>PREVENTA</td><td>Consulta productos y clientes; registra clientes y pedidos de preventa.</td></tr></tbody></table></div></section>
+        <section class="card table-card security-table"><div class="card-heading"><h2>Dispositivos y solicitudes</h2><span id="security-device-count" class="count-label"></span></div><div class="table-wrap"><table><thead><tr><th>Usuario</th><th>Dispositivo</th><th>Identificador</th><th>Estado</th><th>Última conexión</th><th>Acciones</th></tr></thead><tbody id="security-devices-body"></tbody></table></div></section>
+        <section class="card table-card security-table"><div class="card-heading"><h2>Sesiones activas</h2><span id="security-session-count" class="count-label"></span></div><div class="table-wrap"><table><thead><tr><th>Usuario</th><th>Dispositivo</th><th>Última actividad</th><th>Expira</th><th>Acciones</th></tr></thead><tbody id="security-sessions-body"></tbody></table></div></section>
+        <section class="card table-card security-table"><div class="card-heading"><h2>Historial de seguridad</h2><span id="security-event-count" class="count-label"></span></div><div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Acción</th><th>Realizada por</th><th>Cuenta afectada</th><th>Detalle</th></tr></thead><tbody id="security-events-body"></tbody></table></div><p class="field-note">El historial no contiene contraseñas ni tokens y conserva las acciones administrativas registradas.</p></section>
+        <p id="security-sync-status" class="field-note security-sync-status"></p>
+      </section>
+      <section id="view-routes" class="view hidden admin-only">
+        <div class="page-heading"><div><p class="eyebrow">OPERACIÓN COMERCIAL</p><h1>Rutas y bodegas</h1><p class="subheading">Asigna una bodega real a cada ruta y mantén el alcance del vendedor.</p></div><button id="refresh-routes" class="button button-light" type="button">Actualizar</button></div>
+        <div class="content-grid">
+          <form id="warehouse-form" class="card form-card"><h2 id="warehouse-form-title">Registrar bodega</h2><input name="id" type="hidden">
+            <label>Código<input name="code" required maxlength="40"></label><label>Nombre<input name="name" required maxlength="120"></label>
+            <label>Estado<select name="active"><option value="1">ACTIVA</option><option value="0">INACTIVA</option></select></label>
+            <div class="form-actions"><button class="button button-primary" type="submit">Guardar bodega</button><button id="warehouse-cancel" class="button button-light hidden" type="button">Cancelar</button></div>
+          </form>
+          <section class="card table-card"><div class="card-heading"><h2>Bodegas</h2><span id="warehouse-count" class="count-label"></span></div><div class="table-wrap"><table><thead><tr><th>Código</th><th>Nombre</th><th>Rutas activas</th><th>Estado</th><th></th></tr></thead><tbody id="warehouses-body"></tbody></table></div></section>
+          <form id="route-form" class="card form-card"><h2 id="route-form-title">Registrar ruta</h2><input name="id" type="hidden">
+            <label>Identificador<input name="routeId" required maxlength="80" placeholder="route-002"></label><label>Nombre<input name="name" required maxlength="120"></label>
+            <label>Bodega<select name="warehouseId" required><option value="">Selecciona una bodega activa</option></select></label>
+            <label>Estado<select name="active"><option value="1">ACTIVA</option><option value="0">INACTIVA</option></select></label>
+            <div class="form-actions"><button class="button button-primary" type="submit">Guardar ruta</button><button id="route-cancel" class="button button-light hidden" type="button">Cancelar</button></div>
+          </form>
+          <section class="card table-card"><div class="card-heading"><h2>Rutas</h2><span id="route-count" class="count-label"></span></div><div class="table-wrap"><table><thead><tr><th>Ruta</th><th>Bodega</th><th>Vendedores</th><th>Clientes</th><th>Estado</th><th></th></tr></thead><tbody id="routes-body"></tbody></table></div></section>
+        </div>
+      </section>
+      <section id="view-products" class="view">
+        <div class="page-heading"><div><p class="eyebrow">CATÁLOGO</p><h1>Productos</h1><p class="subheading">Productos y existencias disponibles en la ruta.</p></div><a class="button button-light export-link" href="/api/export?resource=products">Exportar CSV</a></div>
+        <div class="content-grid">
+          <form id="product-form" class="card form-card">
+            <h2 id="product-form-title">Agregar producto</h2><input name="id" type="hidden">
+            <label>Código<input name="code" required maxlength="60" autocomplete="off"></label>
+            <label>Nombre corto<input name="shortName" required maxlength="160"></label>
+            <label>Descripción<input name="description" required maxlength="1000"></label>
+            <div class="form-row"><label>Marca<input name="brand" maxlength="100"></label><label>Gramaje / presentación<input name="weight" maxlength="60" placeholder="Ej. 500 g"></label></div>
+            <div class="form-row"><label>Categoría<input name="category" maxlength="100"></label><label>Familia<input name="family" maxlength="100"></label></div>
+            <div class="form-row"><label>Unidad de inventario<input name="unit" value="unidad" required maxlength="40"></label><label>Precio sin IVA<input name="price" type="number" min="0" step="0.01" required value="0"></label></div>
+            <label>Inventario inicial<input name="stock" type="number" min="0" step="0.001" value="0"></label>
+            <label>Bodega del inventario inicial<select name="initialWarehouseId"><option value="">Asignar automáticamente si hay una sola bodega</option></select></label>
+            <label>Estado<select name="active"><option value="1">Activo</option><option value="0">Inactivo</option></select></label>
+            <div class="form-actions"><button class="button button-primary" type="submit">Guardar producto</button><button id="product-cancel" class="button button-light hidden" type="button">Cancelar</button></div>
+            <p class="field-note">El inventario inicial queda registrado en el historial como apertura.</p>
+          </form>
+          <section class="card table-card"><div class="card-heading"><h2>Catálogo y stock</h2><span id="product-count" class="count-label"></span></div>
+            <label>Buscar productos<input id="product-search" type="search" maxlength="120" placeholder="Código, nombre, marca, categoría o familia"></label>
+            <div class="table-wrap"><table><thead><tr><th>Código</th><th>Producto</th><th>Marca / presentación</th><th>Categoría / familia</th><th>Unidad</th><th>Precio sin IVA</th><th>Stock</th><th>Estado</th><th>Acciones</th></tr></thead><tbody id="products-body"></tbody></table></div></section>
+        </div>
+      </section>
+
+      <section id="view-inventory" class="view hidden">
+        <div class="page-heading"><div><p class="eyebrow">EXISTENCIAS</p><h1>Inventario</h1><p class="subheading">El stock se calcula desde el historial de movimientos.</p></div><a class="button button-light export-link" href="/api/export?resource=inventory">Exportar CSV</a></div>
+        <section class="card table-card"><div class="card-heading"><h2>Inventario actual</h2>
+          <label>Bodega<select id="inventory-warehouse-filter"><option value="">Todas las bodegas</option><option value="unassigned">Sin bodega asignada</option></select></label>
+        </div><div class="table-wrap"><table><thead><tr><th>Código</th><th>Producto</th><th>Anterior*</th><th>Entradas</th><th>Salidas</th><th>Ventas</th><th>Ajustes</th><th>Devoluciones</th><th>Actual</th></tr></thead><tbody id="inventory-body"></tbody></table></div><p class="field-note">* Anterior: stock al inicio del día actual. El cierre diario guarda una fotografía histórica.</p></section>
+        <form id="movement-form" class="card compact-form">
+          <h2>Registrar movimiento</h2><div class="form-row form-row-wide">
+            <label>Producto<select name="productId" required></select></label>
+            <label>Bodega<select name="warehouseId" required></select></label>
+            <label>Tipo<select name="kind"><option value="ENTRY">Entrada</option><option value="EXIT">Salida</option><option value="ADJUSTMENT">Ajuste (+ o −)</option><option value="RETURN">Devolución</option></select></label>
+            <label>Cantidad<input name="quantity" type="number" step="0.001" required></label>
+            <label>Fecha<input name="operatingDate" type="date" required></label>
+          </div><label>Referencia / motivo<input name="note" maxlength="240" placeholder="Documento o motivo del movimiento"></label><button class="button button-primary" type="submit">Registrar movimiento</button>
+        </form>
+      </section>
+
+      <section id="view-movements" class="view hidden">
+        <div class="page-heading"><div><p class="eyebrow">HISTORIAL</p><h1>Movimientos</h1><p class="subheading">Entradas, salidas, ajustes y ventas aplicadas al inventario.</p></div><a class="button button-light export-link" href="/api/export?resource=movements">Exportar CSV</a></div>
+        <section class="card table-card"><div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Producto</th><th>Bodega</th><th>Tipo</th><th>Cambio</th><th>Referencia</th><th>Registrado por</th></tr></thead><tbody id="movements-body"></tbody></table></div></section>
+      </section>
+
+      <section id="view-sales" class="view hidden">
+        <div class="page-heading"><div><p class="eyebrow">OPERACIONES</p><h1>Ventas y preventas</h1><p class="subheading">Las preventas solo descuentan inventario al despacharse.</p></div><a class="button button-light export-link" href="/api/export?resource=sales">Exportar CSV</a></div>
+        <section class="card table-card"><div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Cliente</th><th>Vendedor / despacho</th><th>Tipo</th><th>Productos</th><th>Referencia / observaciones</th><th>Total sin IVA</th><th>Estado</th><th></th></tr></thead><tbody id="sales-body"></tbody></table></div></section>
+        <form id="preorder-edit-form" class="card compact-form hidden">
+          <h2>Editar preventa pendiente</h2>
+          <input name="id" type="hidden">
+          <div class="form-row"><label>Cliente<select name="clientId" required></select></label><label>Fecha<input name="operatingDate" type="date" required></label></div>
+          <label>Referencia / observaciones<textarea name="reference" rows="2" maxlength="1000"></textarea></label>
+          <div id="preorder-edit-lines"></div>
+          <div class="form-actions"><button id="add-preorder-edit-line" class="button button-light" type="button">+ Producto</button>
+            <button class="button button-primary" type="submit">Guardar cambios</button>
+            <button id="cancel-preorder-edit" class="button button-light" type="button">Cancelar edición</button></div>
+        </form>
+        <section id="sale-detail" class="card table-card hidden"><div class="card-heading"><h2>Detalle de operación</h2><button id="close-sale-detail" class="button button-light" type="button">Cerrar</button></div><div id="sale-detail-content"></div></section>
+        <section class="card table-card"><div class="card-heading"><h2>Operaciones pendientes de revisión</h2><span id="sync-conflict-count" class="count-label"></span></div><div class="table-wrap"><table><thead><tr><th>Último intento</th><th>Usuario</th><th>Operación</th><th>Detalle</th><th>Intentos</th><th>Motivo</th></tr></thead><tbody id="sync-conflicts-body"></tbody></table></div><p class="field-note">Los conflictos de inventario permanecen en el teléfono del vendedor; al corregir la causa, la próxima sincronización reintentará la misma operación sin duplicarla.</p></section>
+      </section>
+
+      <section id="view-clients" class="view hidden">
+        <div class="page-heading"><div><p class="eyebrow">RUTA 001</p><h1>Clientes</h1><p class="subheading">Datos de contacto básicos de los clientes.</p></div><a class="button button-light export-link" href="/api/export?resource=clients">Exportar CSV</a></div>
+        <div class="content-grid">
+          <form id="client-form" class="card form-card">
+            <h2 id="client-form-title">Registrar cliente</h2>
+            <input name="id" type="hidden">
+            <label>RUC / cédula<input name="taxId" maxlength="40" autocomplete="off"></label>
+            <label>Nombres / nombre completo<input name="fullName" maxlength="160" autocomplete="name"></label>
+            <label>Nombre de la tienda o negocio<input name="businessName" maxlength="160" autocomplete="organization"></label>
+            <div class="form-row"><label>Teléfono<input name="phone" type="tel" maxlength="60" autocomplete="tel"></label>
+              <label>Correo electrónico<input name="email" type="email" maxlength="254" autocomplete="email"></label></div>
+            <label>Calles / dirección / ubicación<input name="address" maxlength="400" autocomplete="street-address"></label>
+            <label>Referencia / ubicación adicional<input name="reference" maxlength="400"></label>
+            <label>Ruta asignada<select name="routeId" required><option value="">Selecciona una ruta activa</option></select></label>
+            <label>Estado<select name="active"><option value="1">ACTIVO</option><option value="0">INACTIVO</option></select></label>
+            <label>Observaciones / notas<textarea name="notes" rows="4" maxlength="2000" placeholder="Contacto, horario, forma de pago o indicaciones para llegar"></textarea></label>
+            <input name="latitude" type="hidden"><input name="longitude" type="hidden">
+            <div class="form-actions"><button class="button button-primary" type="submit">Guardar cliente</button><button id="client-cancel" class="button button-light hidden" type="button">Cancelar edición</button><button id="capture-gps" class="button button-light" type="button">Capturar GPS</button></div>
+            <p id="gps-status" class="field-note">Ubicación opcional; requiere permiso del dispositivo.</p>
+          </form>
+          <section class="card table-card"><div class="card-heading"><h2>Clientes</h2><span id="client-count" class="count-label"></span></div>
+            <label>Buscar cliente<input id="client-search" type="search" maxlength="120" placeholder="Identificación, nombre, teléfono, dirección o ruta"></label>
+            <div class="table-wrap"><table><thead><tr><th>Identificación</th><th>Nombre / negocio</th><th>Contacto</th><th>Dirección / referencia</th><th>Ruta</th><th>Estado</th><th>Observaciones</th><th>Registrado por</th><th>Acciones</th></tr></thead><tbody id="clients-body"></tbody></table></div></section>
+        </div>
+      </section>
+
+      <section id="view-closing" class="view hidden">
+        <div class="page-heading"><div><p class="eyebrow">CONTROL DIARIO</p><h1>Cierre diario</h1><p class="subheading">Guarda una fotografía del inventario y movimientos del día.</p></div><a class="button button-light export-link" href="/api/export?resource=closings">Exportar cierres</a></div>
+        <form id="closing-form" class="card compact-form"><h2>Realizar cierre</h2><div class="form-row"><label>Fecha<input name="closingDate" type="date" required></label><button class="button button-primary" type="submit">Cerrar día</button></div><p class="field-note">El día cerrado no admite nuevos movimientos ni ventas con esa fecha.</p></form>
+        <section class="card table-card"><div class="card-heading"><h2>Cierres registrados</h2></div><div class="table-wrap"><table><thead><tr><th>Fecha de cierre</th><th>Cerrado por</th><th></th></tr></thead><tbody id="closings-body"></tbody></table></div></section>
+        <section id="closing-detail" class="card table-card hidden"><div class="card-heading"><h2>Detalle del cierre</h2><a id="closing-export" class="button button-light">Exportar detalle CSV</a></div><div class="table-wrap"><table><thead><tr><th>Código</th><th>Producto</th><th>Anterior</th><th>Entradas</th><th>Salidas</th><th>Ventas</th><th>Ajustes</th><th>Devoluciones</th><th>Actual</th></tr></thead><tbody id="closing-detail-body"></tbody></table></div></section>
+      </section>
+      <section id="view-rotation" class="view hidden">
+        <div class="page-heading"><div><p class="eyebrow">ACTIVIDAD COMERCIAL</p><h1>Rotación y actividad</h1><p class="subheading">Unidades vendidas y productos sin movimientos en el período.</p></div><a id="rotation-export" class="button button-light">Exportar CSV</a></div>
+        <form id="rotation-form" class="card compact-form"><div class="form-row"><label>Desde<input name="from" type="date" required></label><label>Hasta<input name="to" type="date" required></label><button class="button button-primary" type="submit">Consultar</button></div></form>
+        <section class="card table-card"><div class="table-wrap"><table><thead><tr><th>Código</th><th>Producto</th><th>Stock actual</th><th>Unidades vendidas</th><th>Última venta</th><th>Actividad</th></tr></thead><tbody id="rotation-body"></tbody></table></div></section>
+        <section class="card table-card"><div class="card-heading"><h2>Reporte de ventas</h2><a id="sales-report-export" class="button button-light">Exportar CSV</a></div>
+          <form id="sales-report-form" class="compact-form">
+            <div class="form-row"><label>Desde<input name="from" type="date"></label><label>Hasta<input name="to" type="date"></label>
+              <label>Vendedor<select name="sellerId"><option value="">Todos</option></select></label>
+              <label>Ruta<select name="routeId"><option value="">Todas</option></select></label></div>
+            <div class="form-row"><label>Cliente<select name="clientId"><option value="">Todos</option></select></label>
+              <label>Producto<select name="productId"><option value="">Todos</option></select></label>
+              <button class="button button-primary" type="submit">Consultar ventas</button></div>
+          </form>
+          <div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Vendedor</th><th>Ruta</th><th>Cliente</th><th>Productos</th><th>Tipo / estado</th><th>Total</th></tr></thead><tbody id="sales-report-body"></tbody></table></div>
+        </section>
+      </section>
+      <p id="notice" class="notice hidden" role="status"></p>
+    </main>
+  </div>
+  <main id="auth-gate" class="auth-gate hidden">
+    <section class="auth-card">
+      <a class="brand auth-brand" href="/" aria-label="DRESA"><span class="brand-mark">D</span><span>DRESA<small>Acceso seguro a la operación</small></span></a>
+      <form id="login-form" class="auth-form hidden">
+        <p class="eyebrow">SESIÓN SEGURA</p><h1>Iniciar sesión</h1><p class="subheading">Usa tu cuenta DRESA y un dispositivo autorizado.</p>
+        <label>Usuario<input name="username" required maxlength="40" autocomplete="username"></label>
+        <label>Contraseña<input name="password" type="password" required maxlength="256" autocomplete="current-password"></label>
+        <button class="button button-primary auth-submit" type="submit">Iniciar sesión</button>
+      </form>
+      <form id="bootstrap-form" class="auth-form hidden">
+        <p class="eyebrow">CONFIGURACIÓN INICIAL</p><h1>Crear administrador</h1><p class="subheading">Introduce el token único que muestra la consola de la matriz.</p>
+        <label>Token de configuración<input name="bootstrapToken" required autocomplete="off"></label>
+        <label>Nombre<input name="name" required maxlength="120" autocomplete="name"></label>
+        <label>Usuario<input name="username" required minlength="3" maxlength="40" autocomplete="username"></label>
+        <label>Contraseña segura<input name="password" type="password" required minlength="12" maxlength="256" autocomplete="new-password"></label>
+        <button class="button button-primary auth-submit" type="submit">Configurar matriz</button>
+      </form>
+      <p id="auth-message" class="auth-message" role="status"></p>
+    </section>
+  </main>
+  <main id="seller-main" class="seller-main hidden">
+    <div class="seller-heading"><a href="/" class="brand"><span class="brand-mark">D</span><span>DRESA<small>Venta en ruta</small></span></a><span id="seller-route-tag" class="route-tag"></span><div class="seller-controls"><span id="seller-connection" class="connection"><i></i> Conectando…</span><button id="sync-seller" class="button button-light" type="button">Sincronizar</button><button id="logout-seller" class="button button-light" type="button">Salir</button></div></div>
+    <section class="seller-panel"><p class="eyebrow">NUEVA OPERACIÓN</p><h1>Registrar venta</h1><p class="subheading">Elige autoventa o preventa para comenzar.</p>
+      <form id="seller-form">
+        <fieldset class="sale-kind"><legend>Tipo de operación</legend><label><input type="radio" name="kind" value="AUTOVENTA" checked><span>Autoventa<small>Descuenta el inventario ahora</small></span></label><label><input type="radio" name="kind" value="PREVENTA"><span>Preventa<small>Pedido pendiente de despacho</small></span></label></fieldset>
+        <div class="form-row"><label>Cliente<select name="clientId" required></select></label><button id="new-client-toggle" class="button button-light compact-button" type="button">+ Cliente</button></div>
+        <div id="seller-new-client" class="inline-client hidden">
+          <label>RUC / cédula<input name="newClientTaxId" maxlength="40"></label>
+          <label>Nombres / nombre completo<input name="newClientFullName" maxlength="160"></label>
+          <label>Nombre de la tienda o negocio<input name="newClientBusinessName" maxlength="160"></label>
+          <label>Teléfono<input name="newClientPhone" type="tel" maxlength="60"></label>
+          <label>Correo electrónico<input name="newClientEmail" type="email" maxlength="254"></label>
+          <label>Calles / dirección / ubicación<input name="newClientAddress" maxlength="400"></label>
+          <label>Referencia / ubicación adicional<input name="newClientReference" maxlength="400"></label>
+          <label class="inline-client-notes">Observaciones / notas<textarea name="newClientNotes" rows="3" maxlength="2000"></textarea></label>
+          <button id="save-inline-client" class="button button-primary" type="button">Guardar cliente</button>
+        </div>
+        <div class="sale-lines-heading"><h2>Productos</h2><button id="add-sale-line" class="button button-light compact-button" type="button">+ Producto</button></div>
+        <div id="sale-lines"></div>
+        <div id="sale-summary" class="field-note" aria-live="polite"></div>
+        <label>Referencia / observaciones<textarea name="reference" rows="2" maxlength="1000" placeholder="Referencia del pedido o indicaciones para despacho"></textarea></label>
+        <label>Fecha de operación<input name="operatingDate" type="date" required></label>
+        <button class="button button-primary seller-submit" type="submit">Guardar operación</button>
+      </form>
+    </section>
+    <section class="seller-panel pending-panel"><div class="card-heading"><h2>Pendientes de sincronizar</h2><span id="pending-count" class="count-label">0</span></div><div id="pending-list" class="pending-list"></div></section>
+    <section class="seller-panel"><div class="card-heading"><h2>Mis operaciones</h2><span id="seller-history-count" class="count-label"></span></div><div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Cliente</th><th>Tipo</th><th>Total</th><th>Estado</th></tr></thead><tbody id="seller-history-body"></tbody></table></div></section>
+    <a class="seller-link seller-admin-link admin-only hidden" href="/">Ir a matriz →</a>
+  </main>
+  <script src="/app.js?v=18" defer></script>
+</body>
+</html>

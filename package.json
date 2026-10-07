@@ -1,0 +1,15 @@
+{
+  "name": "dresa-inventory",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Plataforma local-first de inventario, ventas y preventas para DRESA",
+  "type": "module",
+  "scripts": {
+    "start": "node --disable-warning=ExperimentalWarning src/server.js",
+    "dev": "node --watch --disable-warning=ExperimentalWarning src/server.js",
+    "test": "node --disable-warning=ExperimentalWarning --test"
+  },
+  "engines": {
+    "node": ">=22.5"
+  }
+}
