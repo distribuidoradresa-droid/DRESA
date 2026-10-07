@@ -522,7 +522,7 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
   const listener = tlsCertificate
     ? createHttpsServer({ cert: readFileSync(tlsCertificate), key: readFileSync(tlsKey) }, app)
     : app;
-  const host = process.env.DRESA_HOST || '127.0.0.1';
+  const host = '0.0.0.0';
   listener.listen(port, host, () => {
     const protocol = tlsCertificate ? 'https' : 'http';
     console.log(`DRESA disponible en ${protocol}://localhost:${port}`);
