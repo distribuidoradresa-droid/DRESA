@@ -696,6 +696,21 @@ test('el bootstrap crea un administrador con contraseña derivada y se consume u
     deviceId, deviceName: 'Otra matriz',
   }, 'POST', null);
   assert.equal(secondBootstrap.status, 409);
+  const forwardedHttpsBootstrap = await fetch(`${base}/api/auth/bootstrap`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-DRESA-Device': deviceId,
+      Origin: `https://${new URL(base).host}`,
+      'X-Forwarded-Proto': 'https',
+    },
+    body: JSON.stringify({
+      bootstrapToken, name: 'Segundo administrador', username: 'second', password: 'Another-safe-password-2026',
+      deviceId, deviceName: 'Otra matriz',
+    }),
+  });
+  assert.equal(forwardedHttpsBootstrap.status, 409);
+  assert.equal((await forwardedHttpsBootstrap.json()).code, 'ALREADY_CONFIGURED');
 });
 
 test('la API niega acceso sin sesión y comprueba origen y dispositivo ligado', async () => {

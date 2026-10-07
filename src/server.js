@@ -50,7 +50,9 @@ function assertSessionDevice(request, session) {
 
 function assertSameOrigin(request) {
   const origin = request.headers.origin;
-  if (origin && origin !== `http${request.socket.encrypted ? 's' : ''}://${request.headers.host}`) {
+  const forwardedProtocol = request.headers['x-forwarded-proto']?.split(',')[0].trim().toLowerCase();
+  const protocol = request.socket.encrypted || forwardedProtocol === 'https' ? 'https' : 'http';
+  if (origin && origin !== `${protocol}://${request.headers.host}`) {
     throw new AuthError(403, 'INVALID_ORIGIN', 'Solicitud rechazada');
   }
   if (request.headers['sec-fetch-site'] === 'cross-site') {
